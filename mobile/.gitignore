@@ -18,6 +18,8 @@ pubspec.lock
 google-services.json
 GoogleService-Info.plist
 ios/Flutter/flutter_export_environment.sh
+# Local run script with real --dart-define values (never committed)
+run-dev.sh
 
 # OS
 .DS_Store
