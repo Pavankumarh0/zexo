@@ -37,8 +37,17 @@ async def create_event(
         VALUES ($1, $2, $3, ST_SetSRID(ST_MakePoint($4, $5), 4326), $6, $7, $8, $9, $10, $11)
         RETURNING {_EVENT_COLUMNS}
         """,
-        creator_id, title, description, lng, lat, radius_m, capacity, tags,
-        visibility, starts_at, ends_at,
+        creator_id,
+        title,
+        description,
+        lng,
+        lat,
+        radius_m,
+        capacity,
+        tags,
+        visibility,
+        starts_at,
+        ends_at,
     )
     # Record creator as host (Requirement 11.4).
     await conn.execute(
@@ -47,7 +56,8 @@ async def create_event(
         VALUES ($1, $2, 'host', 'going')
         ON CONFLICT (event_id, user_id) DO UPDATE SET role = 'host'
         """,
-        row["id"], creator_id,
+        row["id"],
+        creator_id,
     )
     return row
 
@@ -87,7 +97,14 @@ async def list_nearby(
         ORDER BY distance_m ASC, e.id ASC
         LIMIT $8
         """,
-        me, lng, lat, radius_m, tags, after_distance, after_id, limit,
+        me,
+        lng,
+        lat,
+        radius_m,
+        tags,
+        after_distance,
+        after_id,
+        limit,
     )
 
 
@@ -102,7 +119,8 @@ async def get_event(conn: asyncpg.Connection, event_id: str, me: str) -> asyncpg
         FROM events e
         WHERE e.id = $1
         """,
-        event_id, me,
+        event_id,
+        me,
     )
 
 
@@ -125,7 +143,8 @@ async def update_event(
 async def role_for(conn: asyncpg.Connection, event_id: str, user_id: str) -> str | None:
     row = await conn.fetchrow(
         "SELECT role FROM event_rsvps WHERE event_id = $1 AND user_id = $2",
-        event_id, user_id,
+        event_id,
+        user_id,
     )
     return row["role"] if row else None
 
@@ -142,7 +161,9 @@ async def upsert_rsvp(
         ON CONFLICT (event_id, user_id) DO UPDATE SET status = EXCLUDED.status
         RETURNING event_id, user_id, role, status
         """,
-        event_id, user_id, status,
+        event_id,
+        user_id,
+        status,
     )
 
 
@@ -153,7 +174,9 @@ async def set_role(conn: asyncpg.Connection, event_id: str, user_id: str, role: 
         VALUES ($1, $2, $3, 'going')
         ON CONFLICT (event_id, user_id) DO UPDATE SET role = EXCLUDED.role
         """,
-        event_id, user_id, role,
+        event_id,
+        user_id,
+        role,
     )
 
 
@@ -183,7 +206,8 @@ async def going_count_excluding(conn: asyncpg.Connection, event_id: str, user_id
         SELECT count(*) FROM event_rsvps
         WHERE event_id = $1 AND status = 'going' AND user_id <> $2
         """,
-        event_id, user_id,
+        event_id,
+        user_id,
     )
 
 

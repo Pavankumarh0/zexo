@@ -35,6 +35,33 @@ class EventsRepository {
     return EventModel.fromJson(json);
   }
 
+  Future<EventModel> create({
+    required String title,
+    String? description,
+    required double lat,
+    required double lng,
+    required double radiusM,
+    int? capacity,
+    required List<String> tags,
+    required String visibility,
+    required DateTime startsAt,
+    required DateTime endsAt,
+  }) async {
+    final json = await _api.postJson('/events', body: {
+      'title': title,
+      if (description != null && description.isNotEmpty) 'description': description,
+      'lat': lat,
+      'lng': lng,
+      'radius_m': radiusM,
+      if (capacity != null) 'capacity': capacity,
+      'tags': tags,
+      'visibility': visibility,
+      'starts_at': startsAt.toUtc().toIso8601String(),
+      'ends_at': endsAt.toUtc().toIso8601String(),
+    });
+    return EventModel.fromJson(json);
+  }
+
   Future<void> rsvp(String eventId, String status) async {
     await _api.postJson('/events/$eventId/rsvp', body: {'status': status});
   }

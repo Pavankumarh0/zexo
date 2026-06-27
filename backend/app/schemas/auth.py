@@ -1,22 +1,21 @@
-"""Authentication request/response schemas."""
+"""Authentication request/response schemas (Google OAuth only)."""
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
-
-
-class VerifyOtpRequest(BaseModel):
-    phone: str = Field(min_length=5, max_length=20)
-    otp: str = Field(min_length=4, max_length=10)
+from pydantic import BaseModel
 
 
 class GoogleAuthRequest(BaseModel):
+    """A Google ID token obtained from the native Google Sign-In flow."""
+
     id_token: str
+    access_token: str | None = None
 
 
 class AuthUser(BaseModel):
     id: str
     display_name: str | None = None
+    email: str | None = None
     is_new: bool = False
 
 

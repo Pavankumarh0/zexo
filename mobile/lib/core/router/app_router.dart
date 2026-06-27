@@ -6,6 +6,8 @@ import '../../features/chat/presentation/chat_list_screen.dart';
 import '../../features/chat/presentation/chat_thread_screen.dart';
 import '../../features/discover/presentation/discover_map_screen.dart';
 import '../../features/discover/presentation/discover_screen.dart';
+import '../../features/events/presentation/event_create_screen.dart';
+import '../../features/events/presentation/event_detail_screen.dart';
 import '../../features/events/presentation/events_screen.dart';
 import '../../features/onboarding/application/onboarding_flag.dart';
 import '../../features/onboarding/presentation/auth_screen.dart';
@@ -86,6 +88,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/map',
         parentNavigatorKey: _rootKey,
         builder: (_, __) => const DiscoverMapScreen(),
+      ),
+      GoRoute(
+        path: '/events/new',
+        parentNavigatorKey: _rootKey,
+        builder: (_, __) => const EventCreateScreen(),
+      ),
+      GoRoute(
+        path: '/event/:id',
+        parentNavigatorKey: _rootKey,
+        builder: (_, state) =>
+            EventDetailScreen(eventId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/privacy',

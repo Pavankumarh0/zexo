@@ -24,7 +24,7 @@ lib/
     models/                       # immutable models with fromJson
     widgets/                      # DistanceBadge, TagChip, EmptyState
   features/
-    onboarding/                   # phone OTP + profile setup + location permission
+    onboarding/                   # Google sign-in + profile setup + location permission
     discover/                     # ranked cards feed + map placeholder
     chat/                         # thread list + real-time thread
     events/                       # nearby events + inline RSVP
@@ -44,9 +44,13 @@ flutter run \
   --dart-define=WS_BASE_URL=wss://your-api.up.railway.app \
   --dart-define=SUPABASE_URL=https://your-project.supabase.co \
   --dart-define=SUPABASE_ANON_KEY=your-anon-key \
+  --dart-define=GOOGLE_WEB_CLIENT_ID=your-google-web-client-id \
   --dart-define=MAPBOX_TOKEN=your-mapbox-token \
   --dart-define=SENTRY_DSN=your-sentry-dsn
 ```
+
+> Auth is **Google only**. `GOOGLE_WEB_CLIENT_ID` must be the Google OAuth *Web* client ID
+> so the ID token is accepted by Supabase. Enable the Google provider in Supabase Auth.
 
 ## Status
 

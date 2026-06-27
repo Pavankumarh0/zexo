@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/distance_badge.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -16,6 +17,11 @@ class EventsScreen extends ConsumerWidget {
     final eventsAsync = ref.watch(nearbyEventsProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Events')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/events/new'),
+        icon: const Icon(Icons.add),
+        label: const Text('Host'),
+      ),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(nearbyEventsProvider),
         child: eventsAsync.when(
@@ -52,39 +58,42 @@ class EventsScreen extends ConsumerWidget {
               itemBuilder: (context, i) {
                 final e = events[i];
                 return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                e.title,
-                                style: Theme.of(context).textTheme.titleMedium,
+                  child: InkWell(
+                    onTap: () => context.push('/event/${e.id}'),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  e.title,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
                               ),
-                            ),
-                            if (e.distanceM != null)
-                              DistanceBadge(distanceM: e.distanceM!),
+                              if (e.distanceM != null)
+                                DistanceBadge(distanceM: e.distanceM!),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '${e.attendeeCount} going'
+                            '${e.capacity != null ? ' / ${e.capacity}' : ''}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          if (e.tags.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            TagChipWrap(tags: e.tags),
                           ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${e.attendeeCount} going'
-                          '${e.capacity != null ? ' / ${e.capacity}' : ''}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        if (e.tags.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          TagChipWrap(tags: e.tags),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _RsvpButton(eventId: e.id, current: e.myRsvp),
+                          ),
                         ],
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: _RsvpButton(eventId: e.id, current: e.myRsvp),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 );

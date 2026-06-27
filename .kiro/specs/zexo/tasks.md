@@ -30,14 +30,17 @@ satisfies. Kiro executes these top-to-bottom; hooks validate each change before 
   - Test: a thrown test error appears as a Sentry event (verified against DSN in dev).
   - _Depends: 1_ · _Req: 19.5_
 
-- [ ] 4. Integrate Supabase Auth — phone OTP + Google OAuth
-  - Implement OTP request/verify and Google OAuth client flows; store JWT securely.
-  - Files: `lib/core/api/auth_repository.dart`, `lib/features/onboarding/auth_controller.dart`.
-  - Test: valid OTP yields a session; invalid OTP shows an error.
+- [ ] 4. Integrate Supabase Auth — Google OAuth only
+  - Implement the native Google sign-in flow (google_sign_in) → exchange the ID token via
+    `POST /auth/google`; persist the Supabase session. No phone/OTP.
+  - Files: `lib/features/onboarding/data/auth_repository.dart`,
+    `lib/features/onboarding/application/onboarding_controller.dart`.
+  - Test: a completed Google flow yields a session; cancellation is a no-op; a rejected
+    token surfaces an error.
   - _Depends: 2_ · _Req: 1_
 
 - [ ] 5. Build onboarding screens
-  - Phone/OTP entry, Google option, display name, avatar upload to Supabase Storage,
+  - Google sign-in screen, display name, avatar upload to Supabase Storage,
     interest-tag multi-select (max 10), discovery-radius picker (500m–50km, default 5km),
     location-permission explainer dialog.
   - Files: `lib/features/onboarding/*`.

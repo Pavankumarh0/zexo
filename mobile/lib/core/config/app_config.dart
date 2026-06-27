@@ -8,6 +8,7 @@ class AppConfig {
     required this.wsBaseUrl,
     required this.supabaseUrl,
     required this.supabaseAnonKey,
+    required this.googleWebClientId,
     required this.mapboxToken,
     required this.sentryDsn,
     required this.environment,
@@ -17,6 +18,11 @@ class AppConfig {
   final String wsBaseUrl;
   final String supabaseUrl;
   final String supabaseAnonKey;
+
+  /// The Google OAuth **Web** client ID, required by google_sign_in to mint an
+  /// ID token that Supabase will accept (`serverClientId`).
+  final String googleWebClientId;
+
   final String mapboxToken;
   final String sentryDsn;
   final String environment;
@@ -36,6 +42,7 @@ class AppConfig {
       ),
       supabaseUrl: const String.fromEnvironment('SUPABASE_URL'),
       supabaseAnonKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
+      googleWebClientId: const String.fromEnvironment('GOOGLE_WEB_CLIENT_ID'),
       mapboxToken: const String.fromEnvironment('MAPBOX_TOKEN'),
       sentryDsn: const String.fromEnvironment('SENTRY_DSN'),
       environment: const String.fromEnvironment(

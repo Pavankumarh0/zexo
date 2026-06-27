@@ -16,7 +16,7 @@ the stack. If a task seems to require something outside this list, stop and ask.
 | State management | **Riverpod** | Use Riverpod providers; do not add Bloc, Provider, GetX, or Redux. |
 | API server | **FastAPI (Python 3.12)** | Hosted on **Railway**. Async endpoints. |
 | Database | **PostgreSQL 16 + PostGIS** | On **Supabase** cloud. SRID 4326 geometry. |
-| Auth | **Supabase Auth** | Phone OTP + Google OAuth. JWT validated server-side. |
+| Auth | **Supabase Auth** | **Google OAuth only** (no phone/OTP). Native Google sign-in → ID token → Supabase. JWT validated server-side. |
 | Real-time | **FastAPI WebSockets + Redis pub/sub (Upstash)** | Per-thread channels `thread:{id}`. |
 | Storage | **Supabase Storage** | Avatars, event cover images. |
 | Maps | **Mapbox GL Flutter SDK** | Clusters, radius rings, drag-to-set geofence. |

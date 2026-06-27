@@ -88,8 +88,12 @@ def rank(
             user_id=c.user_id,
             distance_m=c.distance_m,
             score=compute_score(
-                c.distance_m, radius_m, user_tag_set, c.tags,
-                w_distance=w_distance, w_tag=w_tag,
+                c.distance_m,
+                radius_m,
+                user_tag_set,
+                c.tags,
+                w_distance=w_distance,
+                w_tag=w_tag,
             ),
             shared_tags=shared_tags(user_tag_set, c.tags),
         )

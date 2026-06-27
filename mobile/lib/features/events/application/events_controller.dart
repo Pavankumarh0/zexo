@@ -16,3 +16,9 @@ final nearbyEventsProvider = FutureProvider<List<EventModel>>((ref) async {
         radiusM: profile.radiusM,
       );
 });
+
+/// A single event's detail by id.
+final eventByIdProvider =
+    FutureProvider.family<EventModel, String>((ref, id) {
+  return ref.watch(eventsRepositoryProvider).getById(id);
+});

@@ -38,7 +38,9 @@ async def discover_feed(
     """Ranked nearby-user feed: distance x tag-overlap, cursor-paginated, excludes
     invisible/blocked users (handled by the nearby_users SECURITY DEFINER function)."""
     radius_m = clamp_radius(
-        radius, min_m=settings.radius_min_m, max_m=settings.radius_max_m,
+        radius,
+        min_m=settings.radius_min_m,
+        max_m=settings.radius_max_m,
         default_m=settings.radius_default_m,
     )
 
@@ -68,7 +70,9 @@ async def discover_feed(
     by_id = {str(r["user_id"]): r for r in rows}
 
     ranked = rank(
-        my_tags, candidates, radius_m,
+        my_tags,
+        candidates,
+        radius_m,
         w_distance=settings.discover_weight_distance,
         w_tag=settings.discover_weight_tag,
     )
@@ -110,9 +114,7 @@ async def discover_map(
     try:
         min_lng, min_lat, max_lng, max_lat = (float(x) for x in bbox.split(","))
     except ValueError as exc:
-        raise api_error(
-            422, "invalid_bbox", "bbox must be 'minLng,minLat,maxLng,maxLat'"
-        ) from exc
+        raise api_error(422, "invalid_bbox", "bbox must be 'minLng,minLat,maxLng,maxLat'") from exc
 
     async with acquire(user_id) as conn:
         user_rows = await discover_repo.map_users(

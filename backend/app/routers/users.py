@@ -135,9 +135,7 @@ async def block_user(
             conn, user_id, other_id, reason=body.reason, reported=body.report
         )
     if body.report:
-        await forward_report(
-            reporter_id=user_id, reported_id=other_id, reason=body.reason
-        )
+        await forward_report(reporter_id=user_id, reported_id=other_id, reason=body.reason)
     return BlockResponse(blocked=True)
 
 

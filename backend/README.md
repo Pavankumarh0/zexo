@@ -32,13 +32,37 @@ uvicorn app.main:app --reload --port 8000
 
 Open http://localhost:8000/docs for the OpenAPI UI and http://localhost:8000/health.
 
-## Database migrations
+## Connecting Supabase + writing the database
 
-Apply the ordered SQL in `app/migrations/` against your Supabase Postgres (PostGIS enabled):
+1. **Create a Supabase project** (or open your existing one).
+2. **Enable the required extensions** — in the Supabase dashboard under
+   *Database → Extensions*, enable `postgis`, `pgcrypto`, and `pg_cron`. (The migrations
+   also `CREATE EXTENSION IF NOT EXISTS` them, but enabling via the dashboard avoids
+   permission issues.)
+3. **Grab the connection string** — *Project Settings → Database → Connection string → URI*.
+   Use the **session** pooler/direct URI (port 5432) for migrations.
+4. **Apply the migrations** with the included runner (idempotent, tracked in a
+   `_zexo_migrations` table):
 
-```bash
-for f in app/migrations/*.sql; do psql "$DATABASE_URL" -f "$f"; done
-```
+   ```bash
+   cd backend
+   pip install -r requirements.txt           # provides asyncpg
+   export DATABASE_URL="postgresql://postgres:<pw>@db.<ref>.supabase.co:5432/postgres"
+   make migrate            # apply all pending migrations
+   make migrate-status     # show applied / pending / changed
+   ```
+
+   Or apply manually via the Supabase SQL editor by pasting each file in
+   `app/migrations/` in numeric order (`0001` → `0009`).
+
+5. **Set the API environment** (`.env`) — at minimum `DATABASE_URL`, `SUPABASE_URL`,
+   `SUPABASE_JWT_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, and `REDIS_URL`. See `.env.example`.
+
+### Authentication
+
+Auth is **Google OAuth only** via Supabase Auth (no phone/OTP). Enable the Google provider
+in *Supabase → Authentication → Providers → Google* and set the OAuth client ID/secret. The
+mobile client performs the native Google sign-in and posts the ID token to `POST /auth/google`.
 
 ## Tests
 

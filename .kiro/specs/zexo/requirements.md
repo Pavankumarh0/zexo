@@ -46,17 +46,17 @@ the supporting authentication, privacy, safety, and non-functional concerns.
 
 ## Requirement 1 — Authentication & Account
 
-**User Story:** As a new user, I want to sign up and sign in using my phone number or
-Google account, so that I can access Zexo without managing a password.
+**User Story:** As a new user, I want to sign in with my Google account, so that I can access
+Zexo quickly without managing a password or phone number.
 
 #### Acceptance Criteria
 
-1. WHEN a user submits a phone number THEN the system SHALL send a one-time passcode (OTP) via Supabase Auth.
-2. WHEN a user submits a valid OTP THEN the system SHALL verify it through `POST /auth/verify-otp` and return a signed JWT.
-3. WHEN a user submits an invalid or expired OTP THEN the system SHALL reject the request with a 401 and a descriptive error.
-4. WHEN a user chooses Google sign-in THEN the system SHALL complete the OAuth flow via `POST /auth/google` and return a signed JWT.
-5. WHEN a JWT is presented on any protected endpoint THEN the system SHALL validate its signature and expiry before processing the request.
-6. IF a phone or email already maps to an existing account THEN the system SHALL authenticate the existing user rather than creating a duplicate.
+1. WHEN a user chooses to sign in THEN the system SHALL offer Google OAuth as the only authentication method (no phone/OTP).
+2. WHEN a user completes the native Google flow THEN the client SHALL obtain a Google ID token and exchange it via `POST /auth/google`, returning a signed Supabase JWT.
+3. WHEN the Google ID token is invalid or rejected THEN the system SHALL respond with a 401 and a descriptive error.
+4. WHEN a JWT is presented on any protected endpoint THEN the system SHALL validate its signature and expiry before processing the request.
+5. IF an email already maps to an existing account THEN the system SHALL authenticate the existing user rather than creating a duplicate.
+6. WHEN a user signs out THEN the system SHALL clear both the Google and Supabase sessions on the client.
 
 ---
 

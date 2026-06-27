@@ -5,9 +5,7 @@ from __future__ import annotations
 import asyncpg
 
 
-async def open_or_get_thread(
-    conn: asyncpg.Connection, me: str, peer: str
-) -> tuple[str, bool]:
+async def open_or_get_thread(conn: asyncpg.Connection, me: str, peer: str) -> tuple[str, bool]:
     """Idempotently open a thread between two users. Returns (thread_id, created)."""
     existing = await conn.fetchrow(
         """
@@ -15,14 +13,16 @@ async def open_or_get_thread(
         WHERE LEAST(user_a, user_b) = LEAST($1::uuid, $2::uuid)
           AND GREATEST(user_a, user_b) = GREATEST($1::uuid, $2::uuid)
         """,
-        me, peer,
+        me,
+        peer,
     )
     if existing:
         return str(existing["id"]), False
 
     row = await conn.fetchrow(
         "INSERT INTO chat_threads (user_a, user_b) VALUES ($1, $2) RETURNING id",
-        me, peer,
+        me,
+        peer,
     )
     return str(row["id"]), True
 
@@ -81,11 +81,11 @@ async def insert_message(
         VALUES ($1, $2, $3)
         RETURNING id, thread_id, sender_id, body, read_at, expires_at, created_at
         """,
-        thread_id, sender_id, body,
+        thread_id,
+        sender_id,
+        body,
     )
-    await conn.execute(
-        "UPDATE chat_threads SET last_message_at = now() WHERE id = $1", thread_id
-    )
+    await conn.execute("UPDATE chat_threads SET last_message_at = now() WHERE id = $1", thread_id)
     return row
 
 
@@ -102,5 +102,7 @@ async def mark_read(
           AND created_at <= (SELECT created_at FROM messages WHERE id = $3)
         RETURNING id, read_at
         """,
-        thread_id, reader_id, up_to_message_id,
+        thread_id,
+        reader_id,
+        up_to_message_id,
     )
