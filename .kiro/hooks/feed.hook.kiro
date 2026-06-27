@@ -1,0 +1,19 @@
+{
+  "name": "Discovery Feed Guard",
+  "description": "Asserts the ranking weights both distance and interest-tag overlap, uses cursor-based pagination, and applies the privacy/block exclusion filter.",
+  "version": "1.0",
+  "enabled": true,
+  "trigger": {
+    "type": "fileEdited",
+    "patterns": [
+      "app/services/ranking_service.py",
+      "app/routers/discover.py",
+      "app/repositories/users_repo.py",
+      "lib/features/discover/**"
+    ]
+  },
+  "action": {
+    "type": "agentPrompt",
+    "prompt": "A discovery/feed file changed. Validate against Zexo Requirements 5 & 6 (Discovery Feed & Map), the design.md 'Ranking Algorithm', and non-functional Req 19.1. Check ALL of the following and report any violation with file path and line:\n\n1. DUAL-FACTOR RANKING: Confirm the feed score weights BOTH a distance score AND an interest-tag overlap (Jaccard) score. Neither factor may be dropped or zero-weighted. Default weights W_DISTANCE=0.6, W_TAG=0.4.\n2. CURSOR PAGINATION: Confirm results use cursor-based pagination (cursor encodes the last item's (score, id)); reject offset/limit-only pagination.\n3. RADIUS CLAMP: Confirm the requested radius is clamped to [500m, 50km] with a 5km default before querying.\n4. PRIVACY/BLOCK EXCLUSION: Confirm invisible users and any user in a block relationship with the requester are excluded BEFORE scoring.\n5. SPATIAL FILTER: Confirm candidate selection uses ST_DWithin on `fuzzy_geom` (GIST-indexed) and never raw `geom`.\n6. PERFORMANCE: Flag patterns that risk the /discover p95 < 200ms budget (e.g., N+1 queries, missing index usage, scoring before spatial filtering).\n\nIf any check fails, flag it as BLOCKING and propose the minimal fix. If all pass, confirm the feed ranking is compliant."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Database Migration Guard",
+  "description": "Validates that the PostGIS extension is enabled, GIST indexes exist on all geometry columns, and RLS policies are present on user_locations and users (and all tables).",
+  "version": "1.0",
+  "enabled": true,
+  "trigger": {
+    "type": "fileEdited",
+    "patterns": [
+      "app/migrations/**/*.sql",
+      "supabase/migrations/**/*.sql"
+    ]
+  },
+  "action": {
+    "type": "agentPrompt",
+    "prompt": "A database migration changed. Validate against Zexo Requirements 3 & 18 (Privacy & Row-Level Security) and the design.md 'Data Models'. Check ALL of the following and report any violation with file path and line:\n\n1. POSTGIS EXTENSION: Confirm `CREATE EXTENSION IF NOT EXISTS postgis;` is present in the base migration before any geometry column is created.\n2. SRID: Confirm geometry columns use geometry(Point, 4326) (WGS84).\n3. GIST INDEXES: Confirm a GIST index exists on EVERY geometry column — at minimum `user_locations.fuzzy_geom` and `events.geom`.\n4. RLS ENABLED: Confirm `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;` is present for ALL tables, with explicit ownership/visibility policies on `users` and `user_locations`.\n5. KEYS & CONSTRAINTS: Confirm UUID primary keys, timestamptz timestamps, ON DELETE CASCADE on dependent FKs, and the UNIQUE(event_id, user_id) constraint on event_rsvps.\n6. CRON JOBS: If the migration defines scheduled jobs, confirm pg_cron purges expired messages (hourly) and archives events past ends_at.\n7. RAW GPS: Confirm no migration creates an externally readable view/policy exposing the raw `geom` column of user_locations.\n\nIf any check fails, flag it as BLOCKING and propose the minimal fix. If all pass, confirm the migration is schema- and security-compliant."
+  }
+}
