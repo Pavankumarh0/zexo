@@ -230,23 +230,20 @@ events 1───* event_rsvps *───1 users
 All protected endpoints require `Authorization: Bearer <jwt>`. Errors use a consistent
 envelope: `{ "error": { "code": string, "message": string } }`.
 
-### Auth *(Req 1)*
+### Auth *(Req 1)* — Google OAuth only
 
-**POST /auth/verify-otp**
+**POST /auth/google** — exchange a Google ID token (from the native Google Sign-In flow)
+for a Supabase session.
 ```jsonc
 // req
-{ "phone": "+14155550123", "otp": "123456" }
+{ "id_token": "<google-id-token>", "access_token": "<optional-google-access-token>" }
 // res 200
-{ "jwt": "<token>", "user": { "id": "uuid", "display_name": null, "is_new": true } }
+{ "jwt": "<supabase-jwt>",
+  "user": { "id": "uuid", "display_name": "Mara", "email": "mara@example.com", "is_new": false } }
+// res 401 — { "error": { "code": "auth_failed", "message": "Google verification failed" } }
 ```
 
-**POST /auth/google**
-```jsonc
-// req
-{ "id_token": "<google-id-token>" }
-// res 200
-{ "jwt": "<token>", "user": { "id": "uuid", "is_new": false } }
-```
+There is no phone/OTP endpoint. The client signs out of both Google and Supabase.
 
 ### Users *(Req 2, 3, 7)*
 
@@ -505,8 +502,8 @@ DRAFT ─POST /events─▶ PUBLISHED ─starts_at─▶ LIVE ─ends_at─▶ (
 ## Error Handling
 
 - **Validation** (422): tag limits (10/user, 5/event), radius clamp, `starts_at < ends_at`.
-- **Auth** (401): invalid/expired JWT or OTP. **Forbidden** (403): non-host event edits,
-  attendee list for non-hosts.
+- **Auth** (401): invalid/expired JWT or rejected Google ID token. **Forbidden** (403):
+  non-host event edits, attendee list for non-hosts.
 - **Conflict** (409): capacity exceeded on "going" RSVP (or waitlist per policy).
 - **WS**: on disconnect, ws_manager deregisters the socket, reports to Sentry, and the client
   auto-reconnects with backoff.

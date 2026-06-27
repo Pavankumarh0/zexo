@@ -48,6 +48,7 @@ class ExpireResponse(BaseModel):
 
 # ----- WebSocket frames -----
 
+
 class WSMessageIn(BaseModel):
     type: Literal["message"] = "message"
     body: str = Field(min_length=1, max_length=4000)

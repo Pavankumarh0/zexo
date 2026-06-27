@@ -60,9 +60,7 @@ class TestFuzzCoordinates(unittest.TestCase):
 
     def test_bearings_cover_full_circle(self):
         rng = random.Random(7)
-        bearings = [
-            fuzz_coordinates(10.0, 10.0, rng=rng).bearing_rad for _ in range(2000)
-        ]
+        bearings = [fuzz_coordinates(10.0, 10.0, rng=rng).bearing_rad for _ in range(2000)]
         self.assertLess(min(bearings), 0.2)
         self.assertGreater(max(bearings), 2 * math.pi - 0.2)
 

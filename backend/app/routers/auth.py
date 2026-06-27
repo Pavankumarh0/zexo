@@ -1,7 +1,8 @@
 """Authentication endpoints.
 
-Zexo uses Supabase Auth (steering: stack.md). These endpoints proxy verification to
-Supabase GoTrue, then ensure a corresponding row exists in our `users` table. We never
+Zexo uses Supabase Auth with **Google OAuth only** (steering: stack.md). The client
+performs the native Google Sign-In, then sends the resulting ID token here; we exchange it
+with Supabase GoTrue and ensure a corresponding row exists in our `users` table. We never
 issue our own tokens or store passwords.
 """
 
@@ -13,12 +14,12 @@ from fastapi import APIRouter, Depends
 from app.core.config import Settings, get_settings
 from app.core.db import acquire_service
 from app.core.errors import api_error
-from app.schemas.auth import AuthResponse, AuthUser, GoogleAuthRequest, VerifyOtpRequest
+from app.schemas.auth import AuthResponse, AuthUser, GoogleAuthRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-async def _ensure_user_row(user_id: str, *, phone: str | None, email: str | None) -> bool:
+async def _ensure_user_row(user_id: str, *, email: str | None) -> bool:
     """Upsert a users row for an authenticated identity. Returns True if newly created."""
     async with acquire_service() as conn:
         existing = await conn.fetchval("SELECT 1 FROM users WHERE id = $1", user_id)
@@ -27,11 +28,12 @@ async def _ensure_user_row(user_id: str, *, phone: str | None, email: str | None
             return False
         await conn.execute(
             """
-            INSERT INTO users (id, phone, email, last_seen_at)
-            VALUES ($1, $2, $3, now())
+            INSERT INTO users (id, email, last_seen_at)
+            VALUES ($1, $2, now())
             ON CONFLICT (id) DO NOTHING
             """,
-            user_id, phone, email,
+            user_id,
+            email,
         )
         return True
 
@@ -47,7 +49,7 @@ async def _gotrue(path: str, payload: dict, settings: Settings) -> dict:
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.post(url, json=payload, headers=headers)
     if resp.status_code >= 400:
-        raise api_error(401, "auth_failed", "Verification failed")
+        raise api_error(401, "auth_failed", "Google verification failed")
     return resp.json()
 
 
@@ -61,36 +63,21 @@ def _build_response(data: dict, *, created: bool) -> AuthResponse:
         user=AuthUser(
             id=str(user.get("id")),
             display_name=(user.get("user_metadata") or {}).get("display_name"),
+            email=user.get("email"),
             is_new=created,
         ),
     )
-
-
-@router.post("/verify-otp", response_model=AuthResponse)
-async def verify_otp(
-    body: VerifyOtpRequest, settings: Settings = Depends(get_settings)
-) -> AuthResponse:
-    data = await _gotrue(
-        "/verify", {"type": "sms", "phone": body.phone, "token": body.otp}, settings
-    )
-    user = data.get("user", {}) or {}
-    created = await _ensure_user_row(
-        str(user.get("id")), phone=user.get("phone"), email=user.get("email")
-    )
-    return _build_response(data, created=created)
 
 
 @router.post("/google", response_model=AuthResponse)
 async def google_auth(
     body: GoogleAuthRequest, settings: Settings = Depends(get_settings)
 ) -> AuthResponse:
-    data = await _gotrue(
-        "/token?grant_type=id_token",
-        {"provider": "google", "id_token": body.id_token},
-        settings,
-    )
+    """Exchange a Google ID token for a Supabase session."""
+    payload: dict = {"provider": "google", "id_token": body.id_token}
+    if body.access_token:
+        payload["access_token"] = body.access_token
+    data = await _gotrue("/token?grant_type=id_token", payload, settings)
     user = data.get("user", {}) or {}
-    created = await _ensure_user_row(
-        str(user.get("id")), phone=user.get("phone"), email=user.get("email")
-    )
+    created = await _ensure_user_row(str(user.get("id")), email=user.get("email"))
     return _build_response(data, created=created)

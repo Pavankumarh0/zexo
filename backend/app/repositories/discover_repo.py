@@ -23,7 +23,10 @@ async def nearby_users(
                fuzzy_lat, fuzzy_lng, distance_m
         FROM nearby_users($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4)
         """,
-        me, lng, lat, radius_m,
+        me,
+        lng,
+        lat,
+        radius_m,
     )
 
 
@@ -38,7 +41,11 @@ async def map_users(
 ) -> list[asyncpg.Record]:
     return await conn.fetch(
         "SELECT user_id, fuzzy_lat, fuzzy_lng FROM users_in_bbox($1, $2, $3, $4, $5)",
-        me, min_lng, min_lat, max_lng, max_lat,
+        me,
+        min_lng,
+        min_lat,
+        max_lng,
+        max_lat,
     )
 
 
@@ -53,5 +60,9 @@ async def map_events(
 ) -> list[asyncpg.Record]:
     return await conn.fetch(
         "SELECT id, title, lat, lng, tags FROM events_in_bbox($1, $2, $3, $4, $5)",
-        me, min_lng, min_lat, max_lng, max_lat,
+        me,
+        min_lng,
+        min_lat,
+        max_lng,
+        max_lat,
     )

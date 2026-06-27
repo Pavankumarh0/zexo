@@ -60,11 +60,18 @@ async def create_event(
 ) -> EventDetail:
     async with acquire(user_id) as conn:
         row = await events_repo.create_event(
-            conn, user_id,
-            title=body.title, description=body.description,
-            lat=body.lat, lng=body.lng, radius_m=body.radius_m,
-            capacity=body.capacity, tags=body.tags, visibility=body.visibility,
-            starts_at=body.starts_at, ends_at=body.ends_at,
+            conn,
+            user_id,
+            title=body.title,
+            description=body.description,
+            lat=body.lat,
+            lng=body.lng,
+            radius_m=body.radius_m,
+            capacity=body.capacity,
+            tags=body.tags,
+            visibility=body.visibility,
+            starts_at=body.starts_at,
+            ends_at=body.ends_at,
         )
     detail = _event_detail(row, my_rsvp="going")
     detail.attendee_count = 1
@@ -83,7 +90,9 @@ async def list_events(
     settings: Settings = Depends(get_settings),
 ) -> EventList:
     radius_m = clamp_radius(
-        radius, min_m=settings.radius_min_m, max_m=settings.radius_max_m,
+        radius,
+        min_m=settings.radius_min_m,
+        max_m=settings.radius_max_m,
         default_m=settings.radius_default_m,
     )
     cur = decode_cursor(cursor)
@@ -92,8 +101,15 @@ async def list_events(
 
     async with acquire(user_id) as conn:
         rows = await events_repo.list_nearby(
-            conn, user_id, lat=lat, lng=lng, radius_m=radius_m, tags=tags,
-            after_distance=after_distance, after_id=after_id, limit=limit,
+            conn,
+            user_id,
+            lat=lat,
+            lng=lng,
+            radius_m=radius_m,
+            tags=tags,
+            after_distance=after_distance,
+            after_id=after_id,
+            limit=limit,
         )
 
     items = [_event_detail(r) for r in rows]
@@ -159,8 +175,11 @@ async def attendees(event_id: str, user_id: str = Depends(get_current_user_id)) 
             rows = await events_repo.list_attendees(conn, event_id)
             attendee_list = [
                 Attendee(
-                    user_id=str(r["user_id"]), display_name=r["display_name"],
-                    avatar_url=r["avatar_url"], role=r["role"], status=r["status"],
+                    user_id=str(r["user_id"]),
+                    display_name=r["display_name"],
+                    avatar_url=r["avatar_url"],
+                    role=r["role"],
+                    status=r["status"],
                 )
                 for r in rows
             ]

@@ -109,9 +109,7 @@ async def ws_thread(websocket: WebSocket, thread_id: str) -> None:
             await websocket.close(code=4403)
             return
         peer_id = (
-            str(thread["user_b"])
-            if str(thread["user_a"]) == user_id
-            else str(thread["user_a"])
+            str(thread["user_b"]) if str(thread["user_a"]) == user_id else str(thread["user_a"])
         )
         peer_origin = await users_repo.get_origin_and_radius(conn, peer_id)
 
@@ -181,6 +179,4 @@ async def _handle_frame(frame: dict, thread_id: str, user_id: str, peer_origin, 
         if out_of_range:
             async with acquire(user_id) as conn:
                 await threads_repo.expire_thread(conn, thread_id)
-            await manager.publish(
-                thread_id, {"type": "thread_expired", "reason": "range_exit"}
-            )
+            await manager.publish(thread_id, {"type": "thread_expired", "reason": "range_exit"})

@@ -47,7 +47,12 @@ async def update_profile(
         WHERE id = $1
         RETURNING id, display_name, bio, avatar_url, interest_tags, is_visible, radius_m
         """,
-        user_id, display_name, bio, avatar_url, interest_tags, radius_m,
+        user_id,
+        display_name,
+        bio,
+        avatar_url,
+        interest_tags,
+        radius_m,
     )
 
 
@@ -75,21 +80,23 @@ async def upsert_fuzzy_location(
                   ST_Y(fuzzy_geom)::double precision AS fuzzy_lat,
                   ST_X(fuzzy_geom)::double precision AS fuzzy_lng
         """,
-        user_id, fuzzy_lng, fuzzy_lat, accuracy_m,
+        user_id,
+        fuzzy_lng,
+        fuzzy_lat,
+        accuracy_m,
     )
 
 
 async def set_visibility(conn: asyncpg.Connection, user_id: str, is_visible: bool) -> bool:
     row = await conn.fetchrow(
         "UPDATE users SET is_visible = $2 WHERE id = $1 RETURNING is_visible",
-        user_id, is_visible,
+        user_id,
+        is_visible,
     )
     return bool(row["is_visible"]) if row else is_visible
 
 
-async def get_origin_and_radius(
-    conn: asyncpg.Connection, user_id: str
-) -> asyncpg.Record | None:
+async def get_origin_and_radius(conn: asyncpg.Connection, user_id: str) -> asyncpg.Record | None:
     """Return the caller's own fuzzy origin point + configured radius for discovery."""
     return await conn.fetchrow(
         """
@@ -120,7 +127,10 @@ async def add_block(
             reason = EXCLUDED.reason,
             reported = blocks.reported OR EXCLUDED.reported
         """,
-        blocker, blocked, reason, reported,
+        blocker,
+        blocked,
+        reason,
+        reported,
     )
 
 
