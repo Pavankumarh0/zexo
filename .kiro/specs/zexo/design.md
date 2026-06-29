@@ -518,3 +518,60 @@ DRAFT ─POST /events─▶ PUBLISHED ─starts_at─▶ LIVE ─ends_at─▶ (
   backgrounded.
 - **Privacy/compliance**: assert `geom` never serialised; account-deletion purge cascade.
 - **Performance**: load test `/discover` to validate p95 < 200ms.
+
+
+---
+
+## Addendum — Firebase Backend (supersedes the PostGIS design above)
+
+The backend has been migrated to **Firebase**. The product requirements are unchanged; only
+the implementation stack differs. The FastAPI/PostGIS sections above are retained for
+historical context — the authoritative backend now lives in `functions/`.
+
+### Stack mapping
+
+| Original (PostGIS) | Firebase |
+| --- | --- |
+| FastAPI routers | Cloud Functions **callable** functions (TypeScript, 2nd gen) |
+| PostgreSQL + PostGIS | **Firestore** (collections below) |
+| `ST_DWithin` radius query | **geohash** range queries (`geofire-common`) + exact haversine filter in code |
+| Supabase Auth | **Firebase Auth** (Google only); callables read `request.auth` |
+| WebSocket + Redis chat | **Firestore real-time listeners** on `threads/{id}/messages` |
+| pg_cron purge/archive | **Scheduled Cloud Functions** (hourly purge, 15-min archive) |
+| Row-Level Security | **Firestore Security Rules** |
+
+### Firestore collections
+
+- `users/{uid}` — profile (displayName, bio, avatarUrl, email, interestTags[], isVisible,
+  radiusM, fcmTokens[]).
+- `userLocations/{uid}` — `{ geohash, lat, lng (fuzzed ±150m), accuracyM, isVisible, +
+  denormalised displayName/avatarUrl/interestTags }`. **Functions-only** (no client access).
+- `blocks/{blocker_blocked}` — `{ blocker, blocked, reason, reported }`.
+- `threads/{id}` — `{ participants[2], participantsKey, expiresAt, lastMessageAt }`;
+  subcollection `messages/{id}` — `{ senderId, body, readAt, expiresAt = createdAt + 24h }`.
+- `events/{id}` — `{ creatorId, title, geohash, lat, lng, radiusM, capacity, tags[],
+  visibility, startsAt, endsAt, isArchived, attendeeCount }`; subcollection `rsvps/{uid}`.
+
+### Function surface
+
+- **users:** getMe, updateMe, updateLocation (fuzz + geohash), setVisibility, getUser,
+  blockUser, deleteMe, registerPushToken
+- **discover:** discoverNearby (ranked geohash feed, cursor paginated), discoverMap (bbox)
+- **threads:** openThread, listThreads, expireThread, evaluateThreadExpiry (range-exit)
+- **events:** createEvent, listEvents, getEvent, rsvpEvent, eventAttendees, addCohost,
+  updateEvent
+- **triggers:** onUserCreate (profile doc), purgeExpiredMessages, archiveEndedEvents,
+  onMessageCreate (lastMessageAt + FCM)
+
+### Invariants preserved
+
+±150m server-side fuzzing (only fuzzed coords stored/returned); dual-factor ranking
+(distance × tag overlap); 24h message TTL + range-exit expiry; bidirectional block
+exclusion; tag caps (10/user, 5/event); radius clamp (500m–50km).
+
+### Real-time chat
+
+Messages are written **directly** by participants to `threads/{id}/messages` (Security Rules
+enforce `senderId == auth.uid`, participant membership, `expiresAt` present, thread not
+expired) so clients use Firestore snapshot listeners with no server round-trip. The
+`onMessageCreate` trigger maintains `lastMessageAt` and sends FCM to the recipient.
