@@ -1,0 +1,84 @@
+rules_version = '2';
+
+// Zexo Firestore Security Rules.
+//
+// Privacy model (mirrors Requirement 3 / location.hook): clients can NEVER read or write
+// `userLocations` — fuzzed coordinates are only ever returned through the `discoverNearby`
+// / `discoverMap` callable functions (which run with the Admin SDK and bypass these rules).
+// Profile/event/RSVP/block writes are all funnelled through callable functions for
+// validation; chat messages are written directly by participants so real-time listeners
+// work without a round-trip through a function.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function threadParticipants(threadId) {
+      return get(/databases/$(database)/documents/threads/$(threadId)).data.participants;
+    }
+
+    // Public profiles: readable by any signed-in user. All writes go through functions.
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Fuzzed + raw locations: functions-only. No client access whatsoever.
+    match /userLocations/{userId} {
+      allow read, write: if false;
+    }
+
+    // Block records: functions-only.
+    match /blocks/{blockId} {
+      allow read, write: if false;
+    }
+
+    // Chat threads: participants may read/listen. Open/expire handled by functions.
+    match /threads/{threadId} {
+      allow read: if signedIn() && uid() in resource.data.participants;
+      allow write: if false;
+
+      // Messages are created directly by the sender (enables real-time listeners).
+      match /messages/{messageId} {
+        allow read: if signedIn() && uid() in threadParticipants(threadId);
+
+        allow create: if signedIn()
+          && uid() in threadParticipants(threadId)
+          && request.resource.data.senderId == uid()
+          && request.resource.data.body is string
+          && request.resource.data.body.size() > 0
+          && request.resource.data.body.size() <= 4000
+          && request.resource.data.expiresAt is timestamp
+          && (
+            get(/databases/$(database)/documents/threads/$(threadId)).data.expiresAt == null
+            || get(/databases/$(database)/documents/threads/$(threadId)).data.expiresAt > request.time
+          );
+
+        // Participants may mark messages read (only the readAt field may change).
+        allow update: if signedIn()
+          && uid() in threadParticipants(threadId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
+
+        allow delete: if false; // scheduled purge uses the Admin SDK
+      }
+    }
+
+    // Events + RSVPs: readable by signed-in users; all writes via functions.
+    match /events/{eventId} {
+      allow read: if signedIn();
+      allow write: if false;
+
+      match /rsvps/{rsvpUserId} {
+        allow read: if signedIn();
+        allow write: if false;
+      }
+    }
+  }
+}

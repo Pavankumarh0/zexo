@@ -1,4 +1,8 @@
-# Zexo API
+# Zexo API (DEPRECATED)
+
+> ⚠️ **Deprecated.** The backend has been migrated to Firebase — see [`../functions`](../functions)
+> (Cloud Functions + Firestore). This FastAPI/PostGIS service is kept for reference only and
+> is no longer the source of truth.
 
 Proximity-first social discovery backend. **FastAPI (Python 3.12) + PostgreSQL 16/PostGIS
 (Supabase) + Redis pub/sub (Upstash)**, deployed on Railway.
